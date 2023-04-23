@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/router';
 
@@ -9,6 +9,8 @@ const CreateRoom = ({ newRoom, setNewRoom }: {
 
     const { data: session } = useSession();
     const router = useRouter()
+
+    const [roomID, setRoomID] = React.useState<string>("");
 
     return (
         <div className={"h-screen grid place-content-center bg-dracula-background"}>
@@ -26,12 +28,19 @@ const CreateRoom = ({ newRoom, setNewRoom }: {
                 <h1 className={"text-4xl text-dracula-pink font-bold"}>Legendary Codeaborate</h1>
 
                 <div className={"flex flex-col gap-2"}>
-                    <input className={"p-2"} type={"text"}
+                    <input
+                        onChange={(e) => setRoomID(e.target.value)}
+                        className={"p-2"}
+                        type={"text"}
                         placeholder={newRoom ? "Room Name" : "Room ID"}
                     />
                     <button
                         onClick={() => {
-                            router.push("/editor")
+                            if (newRoom) {
+                                router.push(`/editor/${roomID}`)
+                            } else {
+                                router.push(`/editor/${roomID}`)
+                            }
                         }}
                         className={"p-2 bg-dracula-green text-dracula-selection rounded-md"}>{newRoom ? "Create Room" : "Join Room"}</button>
                 </div>

@@ -1,17 +1,25 @@
-import React, { useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSession, signIn, signOut } from "next-auth/react";
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { darcula } from '@uiw/codemirror-theme-darcula';
-
+import initSocket from '../../utils/socket';
+import { Actions } from '../../utils/actions';
+import { Toaster, toast } from 'react-hot-toast';
+import { useRouter } from 'next/router';
 
 const EditorPage = () => {
 
     const { data: session } = useSession();
+    const socketRef = useRef(null);
+
+    const router = useRouter();
+
+    const roomID = router.query.id;
 
     const otherUsers = [
         {
-            name: "Tushar Agarwal",
+            name: "Tushar ",
             image: "https://avatars.githubusercontent.com/u/10214027?v=4",
         },
         {
@@ -20,9 +28,31 @@ const EditorPage = () => {
         },
     ]
 
-    const onChange = useCallback((value, viewUpdate) => {
-        console.log('value:', value);
-    }, []);
+    // SOCKET.IO
+    useEffect(() => {
+        const init = async () => {
+            socketRef.current = await initSocket();
+
+            socketRef.current.on(Actions.CONNECT_ERROR, (err: any) => {
+                console.log(err.message); // not authorized
+                toast.error("This didn't work.")
+                router.push("/");
+            });
+
+            socketRef.current.on(Actions.CONNECT_FAILED, (err: any) => {
+                console.log(err.message); // not authorized
+                toast.error("This didn't work.");
+                router.push("/");
+            });
+
+            socketRef.current.emit(Actions.JOIN, {
+                username: session?.user?.name,
+                roomID,
+            });
+        }
+
+        init();
+    }, [])
 
     if (session)
         return (
@@ -44,8 +74,8 @@ const EditorPage = () => {
                                 <div className={"text-dracula-yellow"}>{session.user?.name}</div>
                             </div>
 
-                            {otherUsers.map((user) => (
-                                <div className={"flex flex-col justify-center items-center p-3"}>
+                            {otherUsers.map((user, i) => (
+                                <div key={i} className={"flex flex-col justify-center items-center p-3"}>
                                     <img src={user?.image} className={"rounded-full w-10 h-10"} />
                                     <div className={"text-dracula-yellow"}>{user?.name}</div>
                                 </div>
@@ -62,7 +92,9 @@ const EditorPage = () => {
                             className="bg-dracula-red text-dracula-backgraound font-bold py-2 px-4 rounded w-full"
                         >Leave Room</button>
                         <button
-                            onClick={() => signOut()}
+                            onClick={() => {
+                                signOut()
+                            }}
                             className="bg-dracula-red text-dracula-backgraound font-bold py-2 px-4 rounded w-full"
                         >Log Out</button>
                     </div>
@@ -76,6 +108,7 @@ const EditorPage = () => {
                         theme={darcula}
                     />
                 </div>
+                <Toaster />
             </div>
         )
 }
