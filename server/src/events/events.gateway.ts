@@ -26,69 +26,40 @@ export class EventsGateway {
   @SubscribeMessage('join')
   handleJoin(
     @MessageBody('roomID') roomID: string,
-    @MessageBody('username') username: string,
-    @ConnectedSocket() client: Socket,
+    @MessageBody('name') name: string,
+    @MessageBody('image') image: string,
+    @ConnectedSocket() socket: Socket,
     @ConnectedSocket() server: Server,
   ): string {
-    client.join(roomID);
+    socket.join(roomID);
+    this.userSocketMap[socket.id] = {
+      name,
+      image,
+    };
 
     // @ts-ignore
     const joinedUsers = Array.from(server.adapter.rooms.get(roomID) || []).map(
       (socketId: any) => {
         return {
           socketId,
-          username: this.userSocketMap[socketId],
+          name: this.userSocketMap[socketId].name,
+          image: this.userSocketMap[socketId].image,
         };
       },
     );
 
-    this.userSocketMap[client.id] = username;
-
+    // notify each users in the room about the new user
     joinedUsers.forEach(({ socketId }) => {
       server.to(socketId).emit('joined', {
         joinedUsers,
-        username,
-        socketId: client.id,
+        name: this.userSocketMap[socket.id].name,
+        image: this.userSocketMap[socket.id].image,
+        socketId: socket.id,
       });
     });
 
     console.log('joinedUsers', joinedUsers);
 
     return roomID;
-  }
-
-  @SubscribeMessage('joined')
-  handleJoined(@MessageBody('id') id: number): number {
-    // id === messageBody.id
-    console.log('id', id);
-    return id;
-  }
-
-  @SubscribeMessage('disconnected')
-  handleDisconnected(@MessageBody('id') id: number): number {
-    // id === messageBody.id
-    console.log('id', id);
-    return id;
-  }
-
-  @SubscribeMessage('code-changed')
-  handleCodeChanged(@MessageBody('id') id: number): number {
-    // id === messageBody.id
-    console.log('id', id);
-    return id;
-  }
-
-  @SubscribeMessage('sync-code')
-  handleSyncCode(@MessageBody('id') id: number): number {
-    // id === messageBody.id
-    console.log('id', id);
-    return id;
-  }
-
-  @SubscribeMessage('leave')
-  handleLeave(@MessageBody('id') id: number): number {
-    // id === messageBody.id
-    console.log('id', id);
-    return id;
   }
 }

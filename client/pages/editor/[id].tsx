@@ -11,22 +11,13 @@ import { useRouter } from 'next/router';
 const EditorPage = () => {
 
     const { data: session } = useSession();
-    const socketRef = useRef(null);
+    const socketRef = useRef<any>(null);
 
     const router = useRouter();
 
     const roomID = router.query.id;
 
-    const otherUsers = [
-        {
-            name: "Tushar ",
-            image: "https://avatars.githubusercontent.com/u/10214027?v=4",
-        },
-        {
-            name: "Dhruv Garg",
-            image: "https://avatars.githubusercontent.com/u/10214026?v=4",
-        },
-    ]
+    const [users, setUsers] = React.useState<any>([]);
 
     // SOCKET.IO
     useEffect(() => {
@@ -46,9 +37,23 @@ const EditorPage = () => {
             });
 
             socketRef.current.emit(Actions.JOIN, {
-                username: session?.user?.name,
+                name: session?.user?.name,
+                image: session?.user?.image,
                 roomID,
             });
+
+            // listen for new user joined
+            socketRef.current.on(Actions.JOINED, ({
+                joinedUsers,
+                name,
+                socketId,
+            }: any) => {
+                console.log(joinedUsers)
+                setUsers(joinedUsers);
+                toast.success(`${name} joined the room.`);
+            });
+
+
         }
 
         init();
@@ -69,12 +74,12 @@ const EditorPage = () => {
                         <div className={"font-bold text-dracula-green text-lg"}>Connected User</div>
 
                         <div className={"flex flex-wrap w-72 justify-center"}>
-                            <div className={"flex flex-col justify-center items-center p-3"}>
+                            {/* <div className={"flex flex-col justify-center items-center p-3"}>
                                 <img src={session.user?.image} className={"rounded-full w-10 h-10"} />
                                 <div className={"text-dracula-yellow"}>{session.user?.name}</div>
-                            </div>
+                            </div> */}
 
-                            {otherUsers.map((user, i) => (
+                            {users.map((user: any, i: number) => (
                                 <div key={i} className={"flex flex-col justify-center items-center p-3"}>
                                     <img src={user?.image} className={"rounded-full w-10 h-10"} />
                                     <div className={"text-dracula-yellow"}>{user?.name}</div>
@@ -104,7 +109,6 @@ const EditorPage = () => {
                         value="console.log('hello world!');"
                         height="100vh"
                         extensions={[javascript({ jsx: true })]}
-                        onChange={onChange}
                         theme={darcula}
                     />
                 </div>
